@@ -1,7 +1,6 @@
 package com.gi241;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -9,7 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
         if (args.length != 3) {
-            System.out.println("Usage: huffman.java <options> <source file> <output file>");
+            System.out.println("Usage: huffman.java [options] <source file> <output file>");
             System.out.println("Options:\n        [-e] Encode\n        [-d] Decode");
             return;
         }
