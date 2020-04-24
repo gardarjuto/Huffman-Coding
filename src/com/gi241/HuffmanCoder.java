@@ -18,7 +18,6 @@ public class HuffmanCoder {
    * @return the encoded string
    */
   public static byte[] encode(String text) {
-    char[] input = text.toCharArray();
     Node root = buildCodeTrie(text);
     String[] codes = new String[ALP_LEN];
     buildCode(codes, root, "");
@@ -30,17 +29,16 @@ public class HuffmanCoder {
       bitString.append(codes[text.charAt(i)]);
     }
     while (bitString.length() % 8 != 0) bitString.append('0');
-    byte[] data = bitStringToByteArray(bitString);
-    return data;
+    return bitStringToByteArray(bitString.toString());
   }
 
-  private static byte[] bitStringToByteArray(StringBuilder bitString) {
+  private static byte[] bitStringToByteArray(String bitString) {
     byte[] byteArray = new byte[bitString.length() / 8];
     for (int i = 0; i < byteArray.length; i++) {
       byte b = 0;
       int n = 7;
       for (int j = 8*i; j < 8*(i+1); j++) {
-        if (bitString.toString().charAt(j) == '1') b += (1<<n);
+        if (bitString.charAt(j) == '1') b += (1<<n);
         n--;
       }
       byteArray[i] = b;
