@@ -6,7 +6,7 @@ More charsets will be added soon, perhaps along with support for different file 
 
 ### Usage:  
 ```cmd
-java -jar HuffmanCoding.jar <option> <input_file> <output_file>
+java -jar HuffmanCoding.jar [option] <input_file> <output_file>
 ```
 
   Options:  
