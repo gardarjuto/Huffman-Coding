@@ -31,12 +31,11 @@ public class Main {
         String fileContents = "";
         if (option.equals("-e")) {
             StringBuilder contents = new StringBuilder();
-            String st;
+            int st;
             try {
                 BufferedReader br = new BufferedReader(new FileReader(originalFile));
-                while ((st = br.readLine()) != null) {
-                    contents.append(st);
-                    contents.append('\n');
+                while ((st = br.read()) != -1) {
+                    contents.append((char)st);
                 }
                 fileContents = contents.toString();
             } catch (IOException e) {
@@ -65,7 +64,7 @@ public class Main {
             }
 
             try {
-                Files.writeString(pathOfNewFile, decodedString, StandardCharsets.UTF_16);
+                Files.write(pathOfNewFile, decodedString.getBytes());
                 System.out.println("Decoded file written to " + pathOfNewFile.toAbsolutePath().toString());
             } catch (IOException e) {
                 e.printStackTrace();
