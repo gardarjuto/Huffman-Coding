@@ -75,11 +75,3 @@ public class Main {
         System.out.println("Resulting file is " + 100.0 * pathOfOutputFile.toFile().length() / pathOfInputFile.toFile().length() + "% of the original size");
     }
 }
-
-// BufferedReader(new FileReader(file))
-// while ((st = br.read()) != -1) {
-//      contents.append((char)st);
-// }
-// Files.write(path, string.getBytes())
-// FileOutputStream(path.toString())
-// stream.write(bytes)
