@@ -1,10 +1,12 @@
 package com.gi241;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class HuffmanCoder {
 
@@ -13,25 +15,37 @@ public class HuffmanCoder {
   private HuffmanCoder() {}
 
   /**
-   * Encodes the string using Huffman Codes based on its character frequencies.
-   * @param text the string to encode
-   * @return the encoded string
+   * Encodes the string using Huffman Codes based on its character frequencies
+   * @param pathIn Path to the input file
+   * @param pathOut Path to the output file
    */
-  public static byte[] encode(String text) {
-    Node root = buildCodeTrie(text);
+  public static void encode(Path pathIn, Path pathOut) throws IOException {
+    File inputFile = pathIn.toFile();
+    Node root = buildCodeTrie(inputFile);
+
     String[] codes = new String[ALP_LEN];
     buildCode(codes, root, "");
-
-    StringBuilder bitString = new StringBuilder();
-    writeTrie(bitString, root);
-    bitString.append(String.format("%32s", Integer.toBinaryString(text.length())).replace(' ', '0'));
-    for (int i = 0; i < text.length(); i++) {
-      bitString.append(codes[text.charAt(i)]);
+    StringBuilder bitsToWrite = new StringBuilder();
+    writeTrie(bitsToWrite, root);                             // Writes trie to file
+    bitsToWrite.append(String.format("%32s", Integer.toBinaryString((int)inputFile.length())).replace(' ', '0')); // Writes length of sensible data to file
+    BufferedReader br = new BufferedReader(new FileReader(inputFile));
+    int charRead;
+    while ((charRead = br.read()) != -1) {
+      bitsToWrite.append(codes[(char)charRead]);
+      if (bitsToWrite.length() > 67108864) {
+        Files.write(pathOut, bitStringToByteArray(bitsToWrite.substring(0, (bitsToWrite.length() / 8) * 8)), StandardOpenOption.APPEND); // Writes data in chunks
+        bitsToWrite = new StringBuilder(bitsToWrite.substring((bitsToWrite.length() / 8) * 8, bitsToWrite.length()));
+      }
     }
-    while (bitString.length() % 8 != 0) bitString.append('0');
-    return bitStringToByteArray(bitString.toString());
+    while (bitsToWrite.length() % 8 != 0) bitsToWrite.append('0');
+    Files.write(pathOut, bitStringToByteArray(bitsToWrite.toString()), StandardOpenOption.APPEND);
   }
 
+  /**
+   * Converts String of bits to byte[]
+   * @param bitString string to be converted
+   * @return converted array
+   */
   private static byte[] bitStringToByteArray(String bitString) {
     byte[] byteArray = new byte[bitString.length() / 8];
     for (int i = 0; i < byteArray.length; i++) {
@@ -46,6 +60,12 @@ public class HuffmanCoder {
     return byteArray;
   }
 
+
+  /**
+   * Decodes given input using Huffman Coding
+   * @param input bytes from input file
+   * @return converted String
+   */
   public static String decode(byte[] input) {
     StringBuilder binary = byteArrayToBitString(input);
     CharacterIterator it = new StringCharacterIterator(binary.toString());
@@ -60,6 +80,11 @@ public class HuffmanCoder {
     return traverseTrie(root, it, length);
   }
 
+  /**
+   * Converts byte[] to StringBuilder of bits
+   * @param input array to be converted
+   * @return converted string of bits
+   */
   private static StringBuilder byteArrayToBitString(byte[] input) {
     StringBuilder sb = new StringBuilder();
     for (byte b : input) {
@@ -70,6 +95,13 @@ public class HuffmanCoder {
     return sb;
   }
 
+  /**
+   * Builds and returns the decoded char sequence by traversing the trie using Huffman Codes
+   * @param root Root node of trie
+   * @param it Iterator for the bit-string
+   * @param length Number of characters to read
+   * @return Decoded string
+   */
   private static String traverseTrie(Node root, CharacterIterator it, int length) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < length; i++) {
@@ -85,6 +117,11 @@ public class HuffmanCoder {
     return sb.toString();
   }
 
+  /**
+   * Reads and rebuilds trie from input
+   * @param it input
+   * @return root node of trie
+   */
   public static Node readTrie(CharacterIterator it) {
     if (it.current() == '1') {
       it.next();
@@ -101,6 +138,11 @@ public class HuffmanCoder {
     return new Node('\0',0, readTrie(it), readTrie(it));
   }
 
+  /**
+   * Writes trie recursively to file
+   * @param sb StringBuilder which will contain the trie
+   * @param x current node of the trie
+   */
   public static void writeTrie(StringBuilder sb, Node x) {
     if (x.isLeaf()) {
       sb.append('1');
@@ -112,6 +154,12 @@ public class HuffmanCoder {
     writeTrie(sb, x.right);
   }
 
+  /**
+   * Builds array from trie which maps from chars to Huffman Codes
+   * @param codes The array to be built
+   * @param curr Current node in trie
+   * @param s Huffman Code so far
+   */
   private static void buildCode(String[] codes, Node curr, String s) {
     if (!curr.isLeaf()) {
       buildCode(codes, curr.left, s + '0');
@@ -124,15 +172,17 @@ public class HuffmanCoder {
 
   /**
    * Builds the corresponding Huffman Code tree from character frequencies.
-   * @param text base string
-   * @return Huffman Code tree
+   * @param file Input file
+   * @return Root of Huffman Code tree
    */
-  public static Node buildCodeTrie(String text) {
-    Map<Character, Long> frequencies =
-            text.chars()
-                    .mapToObj(c -> (char)c)
-                    .collect(Collectors.groupingBy(Function.identity(),Collectors.counting()));
-
+  public static Node buildCodeTrie(File file) throws IOException {
+    BufferedReader br = new BufferedReader(new FileReader(file));
+    int readChar;
+    Map<Character, Long> frequencies = new HashMap<>();
+    while ((readChar = br.read()) != -1) {
+      frequencies.put((char)readChar, frequencies.getOrDefault((char)readChar, 0L) + 1);
+    }
+    br.close();
     PriorityQueue<Node> pq = new PriorityQueue<>();
     for (Character ch: frequencies.keySet()) {
       pq.add(new Node(ch, frequencies.get(ch), null,null));
@@ -147,7 +197,9 @@ public class HuffmanCoder {
     return pq.poll();
   }
 
-
+  /**
+   * Class to represent a node in the Huffman Trie
+   */
   private static class Node implements Comparable<Node> {
     private final char ch;
     private final long freq;
